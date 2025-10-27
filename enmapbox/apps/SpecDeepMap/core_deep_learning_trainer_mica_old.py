@@ -586,7 +586,15 @@ class MyModel(L.LightningModule):
             elif self.weights == "MicaSense_SR_Swin_s3_tiny":
                 assert self.in_channels == 7, f'Input channels should be equal to 7 , but is {self.in_channels}'
                 self.backbone = 'tu-swin_s3_tiny_224'
-                path = "C:/Users/thoma/Desktop/Moco_swin384_train_7_ckpt/swin_s3_tiny_384_84b_epoch=199.ckpt"
+                #path = "C:/Users/thoma/Desktop/MocoMicasense_DonwStreamTask_weedmap/epoch=49-step=16250.ckpt"
+                path= "C:/Users/thoma/Desktop/Moco_swin384_train_7_ckpt/adjusted_lr_swin_s3_tiny_384_84b_epoch=199.ckpt"
+                #path = "C:/Users/thoma/Desktop/Moco_swin384_train_7_ckpt/moco2_swin_s3_tiny_384_84b_epoch=299.ckpt"
+
+                #mica compare test
+                #path = "C:/Users/thoma/Desktop/Moco_swin384_train_7_ckpt/128_moco2_swin_s3_tiny_384_84b_epoch=199.ckpt"
+                #path = "C:/Users/thoma/Desktop/Moco_swin384_train_7_ckpt/256_swin_temp_1_50m_epoch=99.ckpt"
+                #path = "C:/Users/thoma/Desktop/Moco_swin384_train_7_ckpt/128_moco2_swin_s3_tiny_384_84b_epoch=99.ckpt"
+                #path = "C:/Users/thoma/Desktop/Moco_swin384_train_7_ckpt/moco2_swin_s3_tiny_384_84b_epoch=299.ckpt"
                 checkpoint = torch.load(path, map_location=torch.device('cpu'))
                 print(checkpoint['hyper_parameters'])
 
@@ -615,6 +623,10 @@ class MyModel(L.LightningModule):
             # Freeze encoder weights
             for param in model.encoder.parameters():
                 param.requires_grad = False
+
+
+
+
 
         return model
 

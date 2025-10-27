@@ -42,7 +42,7 @@ def identify_unique_classes(input_folder):
     # file_paths = glob.glob(paths)
 
     input_folder = Path(input_folder)  # Define the base folder
-    files = list(input_folder.glob("labels/*.tif"))  # Get list of .tif files
+    files = list(input_folder.glob("labels/*.tiff"))  # Get list of .tif files
 
     # Convert to strings and print
     file_paths = [str(path) for path in files]
@@ -78,7 +78,7 @@ def read_label_images_and_create_histograms(input_folder, num_labels):
     # paths = os.path.join(input_folder, 'labels/*.tif')
     # file_paths = glob.glob(paths)
     input_folder = Path(input_folder)  # Define the base folder
-    files = list(input_folder.glob("labels/*.tif"))  # Get list of .tif files
+    files = list(input_folder.glob("labels/*.tiff"))  # Get list of .tif files
 
     # Convert to strings and print
     file_paths = [str(path) for path in files]

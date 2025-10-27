@@ -312,6 +312,7 @@ class MyModel(L.LightningModule):
         self.class_values = self.hparams.get("class_values")
         self.forward_mapping = self.hparams.get("forward_mapping")
         self.reverse_mapping = self.hparams.get("reverse_mapping")
+        self.epochs = self.hparams.get("epochs")
 
         if self.classes == 1:
             # self.iou = JaccardIndex(task="binary",num_classes=self.classes, ignore_index=self.ignore_index)
@@ -513,7 +514,7 @@ class MyModel(L.LightningModule):
 
     def configure_optimizers(self):
         opt = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
-        sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=10)
+        sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=self.epochs)
         return [opt], [sch]
 
     def on_train_epoch_end(self):
@@ -834,9 +835,23 @@ def dl_train(
                                                       "forward_mapping": forward_mapping,
                                                       "reverse_mapping": reverse_mapping,
                                                       "class_values": cls_values},
-                                             map_location=acc_type
-                                             )
+                                             map_location=acc_type)
 
+        checkpoint_callback = ModelCheckpoint(dirpath=logdirpath_model, monitor='val_iou_epoch',
+                                              # ,monitor='val_iou_epoch'
+                                              filename='{epoch:05d}-val_iou_{val_iou_epoch:.4f}', save_top_k=num_models,
+                                              auto_insert_metric_name=False)
+
+        feedback_callback = FeedbackCallback(feedback=feedback)
+
+        logger = TensorBoardLogger(save_dir=logdirpath, name="lightning_logs")
+        trainer = L.Trainer(
+            max_epochs=n_epochs,
+            accelerator=acc_type,
+            devices=acc_type_numbers,  # leads to gui crash, also starts multiprocess
+            logger=logger,
+            log_every_n_steps=1,
+            callbacks=[checkpoint_callback, feedback_callback], ckpt_path = checkpoint_path)
     # Callbacks
     if early_stop == True:
         early_stopping_callback = EarlyStopping("val_iou", mode="max", verbose=True, patience=20)
