@@ -7,9 +7,9 @@ from time import time
 from typing import Any, Dict, Iterable, List, Optional, TextIO, Tuple
 
 import numpy as np
-from osgeo import gdal
 import processing
-from qgis.PyQt.QtCore import QVariant
+from osgeo import gdal
+from qgis.PyQt.QtCore import QVariant, QDateTime, QDate
 from qgis.PyQt.QtGui import QIcon
 from qgis.core import (Qgis, QgsCategorizedSymbolRenderer, QgsCoordinateReferenceSystem, QgsMapLayer,
                        QgsPalettedRasterRenderer, QgsProcessing, QgsProcessingAlgorithm, QgsProcessingContext,
@@ -21,7 +21,8 @@ from qgis.core import (Qgis, QgsCategorizedSymbolRenderer, QgsCoordinateReferenc
                        QgsProcessingParameterMatrix, QgsProcessingParameterMultipleLayers, QgsProcessingParameterNumber,
                        QgsProcessingParameterRange, QgsProcessingParameterRasterLayer, QgsProcessingParameterString,
                        QgsProcessingParameterVectorDestination, QgsProcessingParameterVectorLayer, QgsProcessingUtils,
-                       QgsProject, QgsProperty, QgsRasterLayer, QgsRectangle, QgsVectorLayer)
+                       QgsProject, QgsProperty, QgsRasterLayer, QgsRectangle, QgsVectorLayer,
+                       QgsProcessingParameterDateTime)
 
 from enmapbox.typeguard import typechecked
 from enmapboxprocessing.driver import Driver
@@ -69,6 +70,7 @@ class EnMAPProcessingAlgorithm(QgsProcessingAlgorithm):
     ReportFileDestination = 'Report file destination.'
     ReportOpen = 'Whether to open the output report in the web browser.'
     FolderDestination = 'Folder destination.'
+    DataCubeDestination = 'Data cube destination.'
     VrtFormat = Driver.VrtFormat
     DefaultVrtCreationOptions = Driver.DefaultVrtCreationOptions
     DefaultVrtCreationProfile = VrtFormat + ' ' + ' '.join(DefaultVrtCreationOptions)
@@ -96,10 +98,10 @@ class EnMAPProcessingAlgorithm(QgsProcessingAlgorithm):
         for c in '!?-+/*()[]{}':
             nameId = nameId.replace(c, '')
         nameId = ''.join([s.title() for s in nameId.split(' ')])
-        return nameId
+        return nameId.lower()
 
     def groupId(self) -> str:
-        return self._generateId(self.group())
+        return self._generateId(self.group()).lower()
 
     def name(self) -> str:
         return self._generateId(self.displayName())
@@ -536,9 +538,15 @@ class EnMAPProcessingAlgorithm(QgsProcessingAlgorithm):
     def parameterAsMatrix(
             self, parameters: Dict[str, Any], name: str, context: QgsProcessingContext
     ) -> Optional[List[Any]]:
+
         value = parameters.get(name)
+
+        if value is None:
+            value = super().parameterAsMatrix(parameters, name, context)
+
         if value == [QVariant()]:
-            return None
+            value = None
+
         return value
 
     def parameterIsNone(self, parameters: Dict[str, Any], name: str):
@@ -943,6 +951,28 @@ class EnMAPProcessingAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(QgsProcessingParameterString(name, description, defaultValue, multiLine, optional))
         self.flagParameterAsAdvanced(name, advanced)
 
+    def addParameterDateTime(
+            self, name: str, description: str, defaultValue=None, optional=False, minValue=QDateTime(),
+            maxValue=QDateTime(), advanced=False
+    ):
+        type = Qgis.ProcessingDateTimeParameterDataType.DateTime
+        self.addParameter(
+            QgsProcessingParameterDateTime(name, description, type, defaultValue, optional, minValue, maxValue)
+        )
+        self.flagParameterAsAdvanced(name, advanced)
+
+    def addParameterDate(
+            self, name: str, description: str, defaultValue=None, optional=False, minValue=QDate(),
+            maxValue=QDate(), advanced=False
+    ):
+        type = Qgis.ProcessingDateTimeParameterDataType.Date
+        minValue = QDateTime(minValue)
+        maxValue = QDateTime(maxValue)
+        self.addParameter(
+            QgsProcessingParameterDateTime(name, description, type, defaultValue, optional, minValue, maxValue)
+        )
+        self.flagParameterAsAdvanced(name, advanced)
+
     def addParameterCode(
             self, name: str, description: str, defaultValue=None, optional=False, advanced=False
     ):
@@ -1020,7 +1050,7 @@ class EnMAPProcessingAlgorithm(QgsProcessingAlgorithm):
             text = link
         return '<a href="' + link + '">' + text + '</a>'
 
-    def tic(self, feedback: ProcessingFeedback, parameters: Dict[str, Any], context: QgsProcessingContext):
+    def tic(self, feedback, parameters: Dict[str, Any], context: QgsProcessingContext):
         self._startTime = time()
 
     def toc(self, feedback: ProcessingFeedback, result: Dict):
@@ -1029,6 +1059,11 @@ class EnMAPProcessingAlgorithm(QgsProcessingAlgorithm):
     @staticmethod
     def runAlg(algOrName, parameters, onFinish=None, feedback=None, context=None, is_child_algorithm=False) -> Dict:
         return processing.run(algOrName, parameters, onFinish, feedback, context, is_child_algorithm)
+
+    @staticmethod
+    def runAlgorithm(algOrName, parameters, onFinish=None, feedback=None, context=None) -> Dict:
+        from processing.core.Processing import Processing
+        return Processing.runAlgorithm(algOrName, parameters, onFinish, feedback, context)
 
 
 class Group(Enum):

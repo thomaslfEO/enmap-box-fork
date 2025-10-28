@@ -9,6 +9,7 @@ from qgis.core import QgsProcessingFeedback, QgsProcessingContext, QgsProcessing
 from qgis.core import QgsProject, edit
 
 start_app()
+initAll()
 
 
 class TestProcessingAlgorithm(QgsProcessingAlgorithm):
@@ -49,13 +50,11 @@ class TestProcessingAlgorithm(QgsProcessingAlgorithm):
 class TestIssue764(EnMAPBoxTestCase):
 
     def test_SpectralProcessing_Logging(self):
-        initAll()
-
         speclib = TestObjects.createSpectralLibrary(2)
 
         alg = FitPcaAlgorithm()
 
-        algorithmId = 'enmapbox:FitPca'
+        algorithmId = 'enmapbox:FitPca'.lower()
         parameters = {'featureRaster': 'profile0'}
 
         def checkOutputs(outputs):

@@ -40,7 +40,7 @@ class AggregateRasterBandsAlgorithm(EnMAPProcessingAlgorithm):
     def helpParameters(self) -> List[Tuple[str, str]]:
         return [
             (self._RASTER, 'A raster layer with bands to be aggregated.'),
-            (self._FUNCTION, 'Functions to be used. '
+            (self._FUNCTION, 'Aggregation functions to be used. '
                              'Number and order of selected functions equals number and order of output bands.'),
             (self._OUTPUT_RASTER, self.RasterFileDestination)
         ]
@@ -66,7 +66,7 @@ class AggregateRasterBandsAlgorithm(EnMAPProcessingAlgorithm):
 
             reader = RasterReader(raster)
             bandCount = len(functionIndices)
-            writer = Driver(filename, feedback=feedback).createLike(reader, Qgis.Float32, bandCount)
+            writer = Driver(filename, feedback=feedback).createLike(reader, Qgis.DataType.Float32, bandCount)
             noDataValue = Utils.defaultNoDataValue(np.float32)
             lineMemoryUsage = reader.lineMemoryUsage(reader.bandCount() + bandCount, 4)
             blockSizeY = min(raster.height(), ceil(gdal.GetCacheMax() / lineMemoryUsage))

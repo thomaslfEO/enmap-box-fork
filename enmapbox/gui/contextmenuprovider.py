@@ -1,3 +1,4 @@
+import logging
 from os.path import exists, splitext
 from typing import List, Union
 
@@ -5,7 +6,6 @@ import numpy as np
 
 import enmapbox.qgispluginsupport.qps.pyqtgraph.pyqtgraph as pg
 import qgis.utils
-from enmapbox import messageLog
 from enmapbox.gui.contextmenus import EnMAPBoxAbstractContextMenuProvider
 from enmapbox.gui.datasources.datasources import DataSource, RasterDataSource, VectorDataSource, ModelDataSource
 from enmapbox.gui.datasources.datasourcesets import DataSourceSet
@@ -23,9 +23,11 @@ from enmapbox.qgispluginsupport.qps.utils import SpatialPoint, SpatialExtent, fi
 from qgis.PyQt.QtCore import Qt, QObject, QPoint, QModelIndex
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QMenu, QWidgetAction, QApplication, QAction
-from qgis.core import QgsWkbTypes, QgsPointXY, QgsRasterLayer, QgsMapLayerProxyModel, QgsMessageLog, Qgis, \
-    QgsProject, QgsLayerTree, QgsVectorLayer, QgsLayerTreeNode, QgsMapLayer, QgsLayerTreeLayer, QgsLayerTreeGroup
+from qgis.core import QgsWkbTypes, QgsPointXY, QgsRasterLayer, QgsMapLayerProxyModel, QgsProject, QgsLayerTree, \
+    QgsVectorLayer, QgsLayerTreeNode, QgsMapLayer, QgsLayerTreeLayer, QgsLayerTreeGroup
 from qgis.gui import QgsMapCanvas, QgisInterface, QgsMapLayerComboBox
+
+logger = logging.getLogger(__name__)
 
 
 class EnMAPBoxContextMenuProvider(EnMAPBoxAbstractContextMenuProvider):
@@ -122,19 +124,7 @@ class EnMAPBoxContextMenuProvider(EnMAPBoxAbstractContextMenuProvider):
         cb = QgsMapLayerComboBox()
         cb.setFilters(QgsMapLayerProxyModel.RasterLayer)
         cb.setAllowEmptyLayer(True)
-
-        # list each source only once
-        all_layers = QgsProject.instance().mapLayers().values()
-        all_layers = sorted(all_layers, key=lambda lyr: not lyr.title().startswith('[EnMAP-Box]'))
-
-        excepted_layers = []
-        sources = []
-        for lyr in all_layers:
-            if lyr.source() in sources:
-                excepted_layers.append(lyr)
-            else:
-                sources.append(lyr.source())
-        cb.setExceptedLayerList(excepted_layers)
+        cb.setProject(mapCanvas.project())
 
         for i in range(cb.count()):
             lyr = cb.layer(i)
@@ -200,13 +190,18 @@ class EnMAPBoxContextMenuProvider(EnMAPBoxAbstractContextMenuProvider):
 
             slws = emb.spectralLibraryWidgets()
             if len(slws) > 0:
-                m = menu.addMenu('Add Spectral Library')
+                m: QMenu = menu.addMenu('Add Spectral Library')
+                m.setToolTipsVisible(True)
+                speclibs = []
                 for slw in slws:
-                    speclib = slw.speclib()
-                    if isinstance(speclib, QgsVectorLayer):
-                        a = m.addAction(speclib.name())
-                        a.setToolTip(speclib.source())
-                        a.triggered.connect(lambda *args, sl=speclib, n=node: node.insertLayer(0, sl))
+                    for sl in slw.spectralLibraries():
+                        if sl not in speclibs:
+                            speclibs.append(sl)
+
+                            a = m.addAction(sl.name())
+                            tt = f'Layer {sl.name()} id {sl.id()}<br>Layer Source: {sl.source()}'
+                            a.setToolTip(tt)
+                            a.triggered.connect(lambda *args, sl=sl, n=node: node.insertLayer(0, sl))
         menu.addSeparator()
         s = ""
 
@@ -564,8 +559,7 @@ class EnMAPBoxContextMenuProvider(EnMAPBoxAbstractContextMenuProvider):
                 msg = 'Failed to create full layer context menu ' \
                       'due to the following missing packages: {}'.format(','.join(missing))
 
-                messageLog(msg)
-                QgsMessageLog.logMessage(msg, level=Qgis.MessageLevel.Warning)
+                logger.error(msg)
 
         return menu
 

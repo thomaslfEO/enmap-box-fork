@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        mamba_env: [ enmapbox_light_latest, enmapbox_light_longterm ]
+        mamba_env: [ enmapbox_light, enmapbox_light_ltr ]
       # python_version : [3.9, 3.10, 3.11]
       # mamba_env: [enmapbox_light_latest, enmapbox_light_longterm, enmapbox_full_latest, enmapbox_full_longterm]
     steps:
@@ -81,4 +81,4 @@ jobs:
       - name: Test EnMAP-Box in ${{matrix.mamba_env}}
         run: |
           chmod +x scripts/runtests.sh
-          bash ./scripts/runtests.sh -n auto
+          bash ./scripts/runtests.sh -n auto --maxfail=2

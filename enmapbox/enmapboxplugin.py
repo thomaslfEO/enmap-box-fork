@@ -19,14 +19,17 @@
 import os
 import sys
 import typing
+from os.path import basename, splitext
 
-from enmapbox.enmapboxprojectsettings import EnMAPBoxProjectSettings
 from qgis.PyQt.QtCore import QOperatingSystemVersion
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 from qgis.PyQt.QtXml import QDomDocument
-from qgis.core import QgsProject, Qgis
+from qgis.core import QgsRasterLayer, QgsVectorLayer, QgsProject, Qgis
 from qgis.gui import QgisInterface, QgsDockWidget
+
+from enmapbox.dependencycheck import missingTestData, installTestData
+from enmapbox.enmapboxprojectsettings import EnMAPBoxProjectSettings
 
 
 class EnMAPBoxPlugin(object):
@@ -39,7 +42,7 @@ class EnMAPBoxPlugin(object):
         self.dockWidgets: typing.List[QgsDockWidget] = []
 
         if QOperatingSystemVersion.current().name() == 'macOS':
-            # os.environ['SKLEARN_SITE_JOBLIB']='True'True
+            # os.environ['SKLEARN_SITE_JOBLIB']='True'
             # fix for issue #221
             os.environ['JOBLIB_MULTIPROCESSING'] = '0'
 
@@ -89,10 +92,12 @@ class EnMAPBoxPlugin(object):
 
         actionStartBox = QAction(enmapbox.icon(), 'EnMAP-Box', iface)
         actionStartBox.triggered.connect(self.run)
-        actionAbout = QAction(QIcon(':/enmapbox/gui/ui/icons/metadata.svg'),
-                              'About')
+        actionAddExampleData = QAction(QIcon(), 'Add Example Data')
+        actionAddExampleData.triggered.connect(self.addExampleData)
+        actionAbout = QAction(QIcon(':/enmapbox/gui/ui/icons/metadata.svg'), 'About')
         actionAbout.triggered.connect(self.showAboutDialog)
         self.rasterMenuActions.append(actionStartBox)
+        self.rasterMenuActions.append(actionAddExampleData)
         self.rasterMenuActions.append(actionAbout)
         self.pluginToolbarActions.append(actionStartBox)
 
@@ -109,6 +114,22 @@ class EnMAPBoxPlugin(object):
         from enmapbox.gui.about import AboutDialog
         d = AboutDialog()
         d.exec()
+
+    def addExampleData(self):
+
+        if missingTestData():
+            installTestData()
+
+        from enmapbox.exampledata import hires, enmap, landcover_point, landcover_polygon
+
+        layers = [
+            QgsVectorLayer(landcover_polygon, splitext(basename(landcover_polygon))[0]),
+            QgsVectorLayer(landcover_point, splitext(basename(landcover_point))[0]),
+            QgsRasterLayer(hires, splitext(basename(hires))[0]),
+            QgsRasterLayer(enmap, splitext(basename(enmap))[0])
+        ]
+
+        QgsProject.instance().addMapLayers(layers)
 
     def initProcessing(self):
         """
@@ -167,6 +188,7 @@ class EnMAPBoxPlugin(object):
         self.initProfileAnalyticsGui()
         self.initRasterBandStackingGui()
         self.initSensorProductImportGui()
+        self.initSpectralIndexExplorerGui()
         self.initTemporalRasterStackControllerGui()
 
     def initCurrentLocationMapTool(self):
@@ -254,6 +276,16 @@ class EnMAPBoxPlugin(object):
         # add items to be removed when unload the plugin
         self.pluginToolbarActions.append(self.sensorProductImportApp.actionToggleDock)
         self.dockWidgets.append(self.sensorProductImportApp.dock)
+
+    def initSpectralIndexExplorerGui(self):
+        from qgis.utils import iface
+        from spectralindexexplorerapp import SpectralIndexExplorerApp
+
+        self.spectralIndexExplorApp = SpectralIndexExplorerApp(None, iface)
+
+        # add items to be removed when unload the plugin
+        self.pluginToolbarActions.append(self.spectralIndexExplorApp.actionToggleDock)
+        self.dockWidgets.append(self.spectralIndexExplorApp.dock)
 
     def initTemporalRasterStackControllerGui(self):
         from temporalrasterstackcontrollerapp import TemporalRasterStackControllerApp

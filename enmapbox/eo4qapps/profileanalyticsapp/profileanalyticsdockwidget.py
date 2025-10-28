@@ -490,9 +490,9 @@ class ProfileAnalyticsDockWidget(QgsDockWidget):
                 style = w.plotStyle()
 
                 w: QLineEdit = self.mRasterTable.cellWidget(row, 3)
-                formular = w.text()
+                formula = w.text()
                 try:
-                    offset, tmp = formular.split('+')
+                    offset, tmp = formula.split('+')
                     scale, _ = tmp.split('*')
                     offset = float(offset)
                     scale = float(scale)
@@ -512,7 +512,8 @@ class ProfileAnalyticsDockWidget(QgsDockWidget):
                         exec(code, namespace)
                         userFunction = namespace['updatePlot']
                     except Exception:
-                        pass
+                        traceback.print_exc()
+
                 userFunctionEditor = w.dialog
                 xValues = [float(v) for v in xValues]
                 yValues = [float(v) for v in yValues]
@@ -536,9 +537,9 @@ class ProfileAnalyticsDockWidget(QgsDockWidget):
                 style = w.plotStyle()
 
                 w: QLineEdit = self.mGeeRasterTable.cellWidget(row, 2)
-                formular = w.text()
+                formula = w.text()
                 try:
-                    offset, tmp = formular.split('+')
+                    offset, tmp = formula.split('+')
                     scale, _ = tmp.split('*')
                     offset = float(offset)
                     scale = float(scale)
@@ -558,7 +559,7 @@ class ProfileAnalyticsDockWidget(QgsDockWidget):
                         exec(code, namespace)
                         userFunction = namespace['updatePlot']
                     except Exception:
-                        pass
+                        traceback.print_exc()
                 userFunctionEditor = w.dialog
                 xValues = [float(v) for v in xValues]
                 yValues = [float(v) for v in yValues]

@@ -3,10 +3,11 @@ from typing import Optional
 
 from osgeo import gdal
 
-from enmapbox.gui.enmapboxgui import EnMAPBox
 from enmapbox.gui.dataviews.dockmanager import DockPanelUI
+from enmapbox.gui.enmapboxgui import EnMAPBox
 from enmapbox.gui.mapcanvas import MapCanvas
 from enmapbox.qgispluginsupport.qps.utils import SpatialExtent
+from enmapbox.typeguard import typechecked
 from enmapbox.utils import BlockSignals
 from enmapboxprocessing.algorithm.createspectralindicesalgorithm import CreateSpectralIndicesAlgorithm
 from enmapboxprocessing.rasterreader import RasterReader
@@ -23,7 +24,6 @@ from qgis.gui import (
 )
 from rasterlayerstylingapp.rasterlayerstylingbandwidget import RasterLayerStylingBandWidget
 from rasterlayerstylingapp.rasterlayerstylingpercentileswidget import RasterLayerStylingPercentilesWidget
-from enmapbox.typeguard import typechecked
 
 
 @typechecked
@@ -80,6 +80,7 @@ class RasterLayerStylingPanel(QgsDockWidget):
         uic.loadUi(__file__.replace('.py', '.ui'), self)
         self.enmapBox = enmapBox
         self.originalRenderer: Optional[QgsRasterRenderer] = None
+        self.mLayer.setProject(self.enmapBox.project())
         self.mLayer.setFilters(QgsMapLayerProxyModel.RasterLayer)
         self.mLayer.setExcludedProviders(['wms'])
         self.cache = dict()
@@ -138,6 +139,9 @@ class RasterLayerStylingPanel(QgsDockWidget):
 
         # init GUI
         self.mRenderer.setCurrentIndex(self.DefaultRendererTab)
+
+    def project(self) -> QgsProject:
+        return self.enmapBox.project()
 
     def onOpenStateChanged(self, wasOpened: bool):
         panel: DockPanelUI = self.enmapBox.ui.dockPanel
@@ -350,7 +354,7 @@ class RasterLayerStylingPanel(QgsDockWidget):
             with BlockSignals(self.mGrayBand.mMin, self.mGrayBand.mMax, self.mGrayBand.mBandNo):
                 self.mGrayBand.mMin.setText(str(ce.minimumValue()))
                 self.mGrayBand.mMax.setText(str(ce.maximumValue()))
-                self.mGrayBand.mBandNo.setBand(renderer.grayBand())
+                self.mGrayBand.mBandNo.setBand(renderer.inputBand())
 
         elif self.mRenderer.currentIndex() == self.PseudoRendererTab:
             self.mPseudoBand.mBandNo.setLayer(layer)
@@ -448,8 +452,8 @@ class RasterLayerStylingPanel(QgsDockWidget):
 
         # find all layers with same source
         layers = list()
-        for layerId in QgsProject.instance().mapLayers():
-            aLayer = QgsProject.instance().mapLayer(layerId)
+        for layerId in self.project().mapLayers():
+            aLayer = self.project().mapLayer(layerId)
             if not isinstance(aLayer, QgsRasterLayer):
                 continue
             if aLayer.dataProvider().name() != 'gdal':
@@ -490,7 +494,7 @@ class RasterLayerStylingPanel(QgsDockWidget):
                 self.mBlueBand.mBandNo.setBand(renderer.blueBand())
         elif isinstance(renderer, QgsSingleBandGrayRenderer):
             with BlockSignals(self.mGrayBand):
-                self.mGrayBand.mBandNo.setBand(renderer.grayBand())
+                self.mGrayBand.mBandNo.setBand(renderer.inputBand())
         elif isinstance(renderer, QgsSingleBandPseudoColorRenderer):
             with BlockSignals(self.mPseudoBand.mBandNo):
                 self.mPseudoBand.mBandNo.setBand(renderer.band())
@@ -608,7 +612,7 @@ class RasterLayerStylingPanel(QgsDockWidget):
         elif self.mRenderer.currentIndex() == self.GrayRendererTab:
             bandNo = self.mGrayBand.mBandNo.currentBand()
             renderer: QgsSingleBandGrayRenderer = layer.renderer()
-            renderer.setGrayBand(bandNo)
+            renderer.setInputBand(bandNo)
             ce = renderer.contrastEnhancement()
             ce.setMinimumValue(tofloat(self.mGrayBand.mMin.text()))
             ce.setMaximumValue(tofloat(self.mGrayBand.mMax.text()))
@@ -821,7 +825,7 @@ class RasterLayerStylingPanel(QgsDockWidget):
                 w.setText(str(tofloat(redMax)))
 
                 renderer2 = renderer.clone()
-                renderer2.setGrayBand(bandNo)
+                renderer2.setInputBand(bandNo)
                 ce2 = QgsContrastEnhancement(provider2.dataType(bandNo))
                 ce2.setMinimumValue(redMin)
                 ce2.setMaximumValue(redMax)

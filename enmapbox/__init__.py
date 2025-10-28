@@ -35,7 +35,7 @@ import warnings
 
 from osgeo import gdal
 
-from qgis.PyQt.QtCore import QSettings
+from qgis.PyQt.QtCore import QSettings, PYQT_VERSION_STR
 from qgis.PyQt.QtGui import QIcon
 from qgis.core import Qgis, QgsApplication, QgsProcessingAlgorithm, QgsProcessingProvider, QgsProcessingRegistry
 from qgis.gui import QgisInterface, QgsMapLayerConfigWidgetFactory
@@ -73,6 +73,9 @@ ENMAP_BOX_KEY = 'EnMAP-Box'
 _ENMAPBOX_MAPLAYER_CONFIG_WIDGET_FACTORIES: typing.List[QgsMapLayerConfigWidgetFactory] = []
 
 gdal.SetConfigOption('GDAL_VRT_ENABLE_PYTHON', 'YES')
+
+# ensure that PyQtGraph uses the same PyQt as QGIS
+os.environ.setdefault('PYQTGRAPH_QT_LIB', f'PyQt{PYQT_VERSION_STR[0]}')
 
 # test if PyQtGraph is available
 try:
@@ -214,10 +217,18 @@ def collectEnMAPBoxAlgorithms() -> typing.List[QgsProcessingAlgorithm]:
 
     try:
         from enmapbox.qgispluginsupport.qps.speclib.processing.aggregateprofiles import AggregateProfiles
-        algs.append(AggregateProfiles())
+        from enmapbox.qgispluginsupport.qps.speclib.processing.importspectralprofiles import ImportSpectralProfiles
+        from enmapbox.qgispluginsupport.qps.speclib.processing.exportspectralprofiles import ExportSpectralProfiles
+        from enmapbox.qgispluginsupport.qps.speclib.processing.extractspectralprofiles import ExtractSpectralProfiles
+
+        algs.extend([AggregateProfiles(),
+                     ImportSpectralProfiles(),
+                     ExportSpectralProfiles(),
+                     ExtractSpectralProfiles()
+                     ])
     except Exception as ex:
         traceback.print_exc()
-        info = 'Unable to load enmapbox.qgispluginsupport.qps.speclib.processing.aggregateprofiles'
+        info = f'Unable to load processing algorithms: {ex}'
         info += '\n' + str(ex)
         messageLog(info, Qgis.Critical)
 
@@ -259,6 +270,7 @@ def registerEnMAPBoxProcessingProvider():
 
 def unregisterEnMAPBoxProcessingProvider():
     """Removes the EnMAPBoxProcessingProvider"""
+    return
     from enmapbox.algorithmprovider import EnMAPBoxProcessingProvider, ID
     registry = QgsApplication.instance().processingRegistry()
     provider = registry.providerById(ID)
@@ -321,11 +333,11 @@ def initAll():
     Calls other init routines required to run the EnMAP-Box properly
     """
     initEnMAPBoxResources()
-    from enmapbox.qgispluginsupport.qps import \
-        registerSpectralLibraryIOs, \
-        registerSpectralLibraryPlotFactories
-    registerSpectralLibraryIOs()
-    registerSpectralLibraryPlotFactories()
+    from enmapbox.qgispluginsupport.qps import registerDataProviders
+    registerDataProviders()
+
+    from enmapbox.provider.maskrasterdataprovider import register_data_provider
+    register_data_provider()
 
     registerEditorWidgets()
     registerExpressionFunctions()

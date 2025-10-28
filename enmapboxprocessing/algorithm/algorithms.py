@@ -1,3 +1,4 @@
+from enmapboxprocessing.algorithm.aggregateardrastersalgorithm import AggregateArdRastersAlgorithm
 from enmapboxprocessing.algorithm.aggregaterasterbandsalgorithm import AggregateRasterBandsAlgorithm
 from enmapboxprocessing.algorithm.aggregaterastersalgorithm import AggregateRastersAlgorithm
 from enmapboxprocessing.algorithm.applymaskalgorithm import ApplyMaskAlgorithm
@@ -17,11 +18,12 @@ from enmapboxprocessing.algorithm.classifierfeaturerankingpermutationimportancea
     ClassifierFeatureRankingPermutationImportanceAlgorithm
 from enmapboxprocessing.algorithm.classifierperformancealgorithm import ClassifierPerformanceAlgorithm
 from enmapboxprocessing.algorithm.classseparabilityalgorithm import ClassSeparabilityAlgorithm
+from enmapboxprocessing.algorithm.cleanupvrtalgorithm import CleanupVrtAlgorithm
 from enmapboxprocessing.algorithm.convexhullalgorithm import ConvexHullAlgorithm
 from enmapboxprocessing.algorithm.createdefaultpalettedrasterrendereralgorithm import \
     CreateDefaultPalettedRasterRendererAlgorithm
 from enmapboxprocessing.algorithm.creategridalgorithm import CreateGridAlgorithm
-from enmapboxprocessing.algorithm.createmaskalgorithm import CreateMaskAlgorithm
+from enmapboxprocessing.algorithm.createmaskalgorithm import CreateMaskAlgorithm, CreateMaskVirtualAlgorithm
 from enmapboxprocessing.algorithm.creatergbimagefromclassprobabilityalgorithm import \
     CreateRgbImageFromClassProbabilityAlgorithm
 from enmapboxprocessing.algorithm.createspectralindicesalgorithm import CreateSpectralIndicesAlgorithm
@@ -237,6 +239,7 @@ from enmapboxprocessing.algorithm.spectralresamplingtosentinel2algorithm import 
     SpectralResamplingToSentinel2bAlgorithm
 from enmapboxprocessing.algorithm.stackrasterlayersalgorithm import StackRasterLayersAlgorithm
 from enmapboxprocessing.algorithm.subsetrasterbandsalgorithm import SubsetRasterBandsAlgorithm
+from enmapboxprocessing.algorithm.tileenmapl2aalgorithm import TileEnmapL2AAlgorithm
 from enmapboxprocessing.algorithm.tilerasteralgorithm import TileRasterAlgorithm
 from enmapboxprocessing.algorithm.transformrasteralgorithm import TransformRasterAlgorithm
 from enmapboxprocessing.algorithm.translatecategorizedrasteralgorithm import TranslateCategorizedRasterAlgorithm
@@ -249,6 +252,7 @@ def algorithms():
     algos = [
         AggregateRasterBandsAlgorithm(),
         AggregateRastersAlgorithm(),
+        AggregateArdRastersAlgorithm(),
         ApplyMaskAlgorithm(),
         Build3dCubeAlgorithm(),
         ClassFractionFromCategorizedLayerAlgorithm(),
@@ -261,10 +265,12 @@ def algorithms():
         ClassifierPerformanceAlgorithm(),
         ClassifierFeatureRankingPermutationImportanceAlgorithm(),
         ClassSeparabilityAlgorithm(),
+        CleanupVrtAlgorithm(),
         ConvexHullAlgorithm(),
         CreateDefaultPalettedRasterRendererAlgorithm(),
         CreateGridAlgorithm(),
         CreateMaskAlgorithm(),
+        CreateMaskVirtualAlgorithm(),
         CreateRgbImageFromClassProbabilityAlgorithm(),
         EditRasterSourceBandPropertiesAlgorithm(),
         ExportDatasetToFilesAlgorithm(),
@@ -432,6 +438,7 @@ def algorithms():
         StackRasterLayersAlgorithm(),
         SubsetRasterBandsAlgorithm(),
         PrepareRegressionDatasetFromSynthMixAlgorithm(),
+        TileEnmapL2AAlgorithm(),
         TileRasterAlgorithm(),
         TranslateCategorizedRasterAlgorithm(),
         TranslateRasterAlgorithm(),
