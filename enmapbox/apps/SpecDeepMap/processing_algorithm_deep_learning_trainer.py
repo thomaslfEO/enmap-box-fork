@@ -302,6 +302,14 @@ class DL_Trainer(QgsProcessingAlgorithm):
             logdirpath_model=self.parameterAsString(parameters, self.logdirpath_model, context),
             feedback=feedback)
 
+        if model:
+            del model
+
+        gpu_use = self.parameterAsEnum(parameters, self.device,context)
+
+        if gpu_use == 1:
+            import torch
+            torch.cuda.empty_cache()
 
         feedback.pushInfo("Training completed.")
 

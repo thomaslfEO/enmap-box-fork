@@ -236,6 +236,10 @@ class CustomDataset(Dataset):
         data_array = data.ReadAsArray().astype(np.float32)
         mask_array = mask.ReadAsArray().astype(np.float32)
 
+        # explicity close gdal if remains exist, so data load dosent get stuck when loading larger datasets
+        del data, mask
+
+
         # remap using dict
         forward_array = mask_array.copy()
         for old, new in self.remap.items():
@@ -597,12 +601,28 @@ class FeedbackCallback(L.Callback):
         super().__init__()
         self.feedback = feedback
 
+    def on_train_end(self, trainer, pl_module):
+        self._cleanup()
+
+    def on_exception(self, trainer, pl_module, exception):
+        self._cleanup()
+
+    def _cleanup(self):
+        try:
+            import torch
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+                torch.cuda.empty_cache()
+        except Exception:
+            pass
     def on_train_batch_end(self,trainer, *args, **kwargs):
         # Check for cancellation after every batch
         if self.feedback and self.feedback.isCanceled():
             trainer.should_stop = True
+            trainer.fit_loop.should_stop = True
             self.feedback.pushInfo("TRAINING CANCELED BY USER !!!")
-            raise KeyboardInterrupt("TRAINING CANCELED BY USER !!!")
+            #raise KeyboardInterrupt("TRAINING CANCELED BY USER !!!")
+
 
             #raise KeyboardInterrupt("Training canceled by user.")
 
